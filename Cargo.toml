@@ -1,6 +1,6 @@
 [package]
 name = "hdfs-native-object-store"
-version = "0.9.1"
+version = "0.10.0"
 edition = "2021"
 authors = ["Adam Binford <adamq43@gmail.com>"]
 homepage = "https://github.com/datafusion-contrib/hdfs-native-object-store"
@@ -15,8 +15,7 @@ async-trait = "0.1"
 bytes = "1"
 chrono = "0.4"
 futures = "0.3"
-# Need master branch until next version is released for tests to pass
-hdfs-native = { version = "0.9", git = "https://github.com/Kimahriman/hdfs-native.git" }
+hdfs-native = "0.9"
 object_store = "0.10"
 thiserror = "1"
 tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"] }
