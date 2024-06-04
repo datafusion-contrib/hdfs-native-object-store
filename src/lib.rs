@@ -1,5 +1,5 @@
 // #![warn(missing_docs)]
-//! Object store implementation for the Native Rust HDFS client
+//! [object_store::ObjectStore] implementation for the Native Rust HDFS client
 //!
 //! # Usage
 //!
@@ -11,6 +11,10 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Feature Flags
+//! `kerberos` - Enables Kerberos authentication support via the [libgssapi](https://docs.rs/libgssapi/latest/libgssapi) crate
+//!
 use std::{
     fmt::{Display, Formatter},
     future,
@@ -41,10 +45,38 @@ pub struct HdfsObjectStore {
 }
 
 impl HdfsObjectStore {
+    /// Creates a new HdfsObjectStore from an existing [Client]
+    ///
+    /// ```rust
+    /// # use std::sync::Arc;
+    /// use hdfs_native::Client;
+    /// # use hdfs_native_object_store::HdfsObjectStore;
+    /// let client = Client::new("hdfs://127.0.0.1:9000").unwrap();
+    /// let store = HdfsObjectStore::new(Arc::new(client));
+    /// ```
     pub fn new(client: Arc<Client>) -> Self {
         Self { client }
     }
 
+    /// Creates a new HdfsObjectStore using the specified URL
+    ///
+    /// Connect to a single NameNode
+    /// ```rust
+    /// # use hdfs_native_object_store::HdfsObjectStore;
+    /// # fn main() -> object_store::Result<()> {
+    /// let store = HdfsObjectStore::with_url("hdfs://127.0.0.1:9000")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Connect to a NameService
+    /// ```rust
+    /// # use hdfs_native_object_store::HdfsObjectStore;
+    /// # fn main() -> object_store::Result<()> {
+    /// let store = HdfsObjectStore::with_url("hdfs://ns")?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn with_url(url: &str) -> Result<Self> {
         Ok(Self {
             client: Arc::new(Client::new(url).to_object_store_err()?),
@@ -133,8 +165,9 @@ impl From<Client> for HdfsObjectStore {
 impl ObjectStore for HdfsObjectStore {
     /// Save the provided bytes to the specified location
     ///
-    /// To make the operation atomic, we write to a temporary file ".{filename}.tmp.{i}" and rename
-    /// on a successful write.
+    /// To make the operation atomic, we write to a temporary file `.{filename}.tmp.{i}` and rename
+    /// on a successful write, where `i` is an integer that is incremented until a non-existent file
+    /// is found.
     async fn put_opts(
         &self,
         location: &Path,
@@ -197,6 +230,7 @@ impl ObjectStore for HdfsObjectStore {
         )))
     }
 
+    /// Reads data for the specified location.
     async fn get_opts(&self, location: &Path, options: GetOptions) -> Result<GetResult> {
         if options.if_match.is_some()
             || options.if_none_match.is_some()
@@ -345,6 +379,7 @@ impl ObjectStore for HdfsObjectStore {
         })
     }
 
+    /// Renames a file. This operation is guaranteed to be atomic.
     async fn rename(&self, from: &Path, to: &Path) -> Result<()> {
         Ok(self
             .client
@@ -353,6 +388,8 @@ impl ObjectStore for HdfsObjectStore {
             .to_object_store_err()?)
     }
 
+    /// Renames a file only if the distination doesn't exist. This operation is guaranteed
+    /// to be atomic.
     async fn rename_if_not_exists(&self, from: &Path, to: &Path) -> Result<()> {
         Ok(self
             .client
