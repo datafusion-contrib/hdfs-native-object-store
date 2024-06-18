@@ -16,6 +16,7 @@
 //! `kerberos` - Enables Kerberos authentication support via the [libgssapi](https://docs.rs/libgssapi/latest/libgssapi) crate
 //!
 use std::{
+    collections::HashMap,
     fmt::{Display, Formatter},
     future,
     path::PathBuf,
@@ -38,6 +39,10 @@ use tokio::{
     sync::{mpsc, oneshot},
     task::{self, JoinHandle},
 };
+
+// Re-export minidfs for down-stream integration tests
+#[cfg(feature = "integration-test")]
+pub use hdfs_native::minidfs;
 
 #[derive(Debug)]
 pub struct HdfsObjectStore {
@@ -78,9 +83,29 @@ impl HdfsObjectStore {
     /// # }
     /// ```
     pub fn with_url(url: &str) -> Result<Self> {
-        Ok(Self {
-            client: Arc::new(Client::new(url).to_object_store_err()?),
-        })
+        Ok(Self::new(Arc::new(Client::new(url).to_object_store_err()?)))
+    }
+
+    /// Creates a new HdfsObjectStore using the specified URL and Hadoop configs.
+    ///
+    /// Connect to a NameService
+    /// ```rust
+    /// # use hdfs_native_object_store::HdfsObjectStore;
+    /// # use std::collections::HashMap;
+    /// # fn main() -> object_store::Result<()> {
+    /// let config = HashMap::from([
+    ///     ("dfs.ha.namenodes.ns".to_string(), "nn1,nn2".to_string()),
+    ///     ("dfs.namenode.rpc-address.nn1".to_string(), "nn1.example.com:9000".to_string()),
+    ///     ("dfs.namenode.rpc-address.nn2".to_string(), "nn2.example.com:9000".to_string()),
+    /// ]);
+    /// let store = HdfsObjectStore::with_config("hdfs://ns", config)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_config(url: &str, config: HashMap<String, String>) -> Result<Self> {
+        Ok(Self::new(Arc::new(
+            Client::new_with_config(url, config).to_object_store_err()?,
+        )))
     }
 
     async fn internal_copy(&self, from: &Path, to: &Path, overwrite: bool) -> Result<()> {
