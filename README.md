@@ -8,15 +8,13 @@ Each release supports a certain minor release of both the `object_store` crate a
 |---|---|---|
 |0.9.x|0.9|0.9|
 |0.10.x|0.10|0.9|
+|0.11.x|0.10|0.10|
 
 # Usage
 ```rust
 use hdfs_native_object_store::HdfsObjectStore;
 let store = HdfsObjectStore::with_url("hdfs://localhost:9000")?;
 ```
-
-# Feature Flags
-`kerberos` - Enables Kerberos authentication support via the [libgssapi](https://docs.rs/libgssapi/latest/libgssapi) crate
 
 # Documentation
 See [Documentation](https://docs.rs/hdfs-native-object-store).

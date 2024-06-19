@@ -12,9 +12,6 @@
 //! # }
 //! ```
 //!
-//! # Feature Flags
-//! `kerberos` - Enables Kerberos authentication support via the [libgssapi](https://docs.rs/libgssapi/latest/libgssapi) crate
-//!
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
