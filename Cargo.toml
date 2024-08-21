@@ -16,7 +16,7 @@ bytes = "1"
 chrono = "0.4"
 futures = "0.3"
 hdfs-native = "0.10"
-object_store = "0.10"
+object_store = ">= 0.10, < 0.12"
 thiserror = "1"
 tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"] }
 
