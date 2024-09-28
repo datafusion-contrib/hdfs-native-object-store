@@ -30,6 +30,8 @@ mod test {
         file.write(buf.freeze()).await.unwrap();
         file.close().await.unwrap();
 
+        client.mkdirs("/testdir", 0o755, true).await.unwrap();
+
         let store = HdfsObjectStore::new(Arc::new(client));
 
         test_object_store_head(&store).await?;
@@ -51,6 +53,7 @@ mod test {
         assert_eq!(head.size, TEST_FILE_INTS * 4);
 
         assert!(store.head(&Path::from("/testfile2")).await.is_err());
+        assert!(store.head(&Path::from("/testdir")).await.is_err());
 
         Ok(())
     }
