@@ -301,6 +301,13 @@ impl ObjectStore for HdfsObjectStore {
             .await
             .to_object_store_err()?;
 
+        if status.isdir {
+            return Err(HdfsError::IsADirectoryError(
+                "Head must be called on a file".to_string(),
+            ))
+            .to_object_store_err();
+        }
+
         Ok(ObjectMeta {
             location: location.clone(),
             last_modified: DateTime::<Utc>::from_timestamp(status.modification_time as i64, 0)
