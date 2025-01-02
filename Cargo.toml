@@ -1,6 +1,6 @@
 [package]
 name = "hdfs-native-object-store"
-version = "0.12.1"
+version = "0.13.0"
 edition = "2021"
 authors = ["Adam Binford <adamq43@gmail.com>"]
 homepage = "https://github.com/datafusion-contrib/hdfs-native-object-store"
@@ -15,7 +15,7 @@ async-trait = "0.1"
 bytes = "1"
 chrono = "0.4"
 futures = "0.3"
-hdfs-native = "0.10"
+hdfs-native = "0.11"
 object_store = ">= 0.10, < 0.12"
 thiserror = "1"
 tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"] }
