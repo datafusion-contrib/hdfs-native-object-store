@@ -62,20 +62,11 @@ impl HdfsObjectStore {
 
     /// Creates a new HdfsObjectStore using the specified URL
     ///
-    /// Connect to a single NameNode
+    /// Connect to a NameNode
     /// ```rust
     /// # use hdfs_native_object_store::HdfsObjectStore;
     /// # fn main() -> object_store::Result<()> {
     /// let store = HdfsObjectStore::with_url("hdfs://127.0.0.1:9000")?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// Connect to a NameService
-    /// ```rust
-    /// # use hdfs_native_object_store::HdfsObjectStore;
-    /// # fn main() -> object_store::Result<()> {
-    /// let store = HdfsObjectStore::with_url("hdfs://ns")?;
     /// # Ok(())
     /// # }
     /// ```
@@ -92,8 +83,8 @@ impl HdfsObjectStore {
     /// # fn main() -> object_store::Result<()> {
     /// let config = HashMap::from([
     ///     ("dfs.ha.namenodes.ns".to_string(), "nn1,nn2".to_string()),
-    ///     ("dfs.namenode.rpc-address.nn1".to_string(), "nn1.example.com:9000".to_string()),
-    ///     ("dfs.namenode.rpc-address.nn2".to_string(), "nn2.example.com:9000".to_string()),
+    ///     ("dfs.namenode.rpc-address.ns.nn1".to_string(), "nn1.example.com:9000".to_string()),
+    ///     ("dfs.namenode.rpc-address.ns.nn2".to_string(), "nn2.example.com:9000".to_string()),
     /// ]);
     /// let store = HdfsObjectStore::with_config("hdfs://ns", config)?;
     /// # Ok(())
