@@ -269,8 +269,16 @@ impl ObjectStore for HdfsObjectStore {
             .read(&make_absolute_file(location))
             .await
             .to_object_store_err()?;
+        let start: usize = range
+            .start
+            .try_into()
+            .expect("unable to convert range.start to usize");
+        let end: usize = range
+            .end
+            .try_into()
+            .expect("unable to convert range.end to usize");
         let stream = reader
-            .read_range_stream(range.start, range.end - range.start)
+            .read_range_stream(start, end - start)
             .map(|b| b.to_object_store_err())
             .boxed();
 
@@ -303,7 +311,10 @@ impl ObjectStore for HdfsObjectStore {
             location: location.clone(),
             last_modified: DateTime::<Utc>::from_timestamp(status.modification_time as i64, 0)
                 .unwrap(),
-            size: status.length,
+            size: status
+                .length
+                .try_into()
+                .expect("unable to convert status.length to usize"),
             e_tag: None,
             version: None,
         })
@@ -333,7 +344,7 @@ impl ObjectStore for HdfsObjectStore {
     /// `foo/bar_baz/x`.
     ///
     /// Note: the order of returned [`ObjectMeta`] is not guaranteed
-    fn list(&self, prefix: Option<&Path>) -> BoxStream<'_, Result<ObjectMeta>> {
+    fn list(&self, prefix: Option<&Path>) -> BoxStream<'static, Result<ObjectMeta>> {
         let status_stream = self
             .client
             .list_status_iter(
@@ -628,7 +639,10 @@ fn get_object_meta(status: &FileStatus) -> Result<ObjectMeta> {
     Ok(ObjectMeta {
         location: Path::parse(&status.path)?,
         last_modified: DateTime::<Utc>::from_timestamp(status.modification_time as i64, 0).unwrap(),
-        size: status.length,
+        size: status
+            .length
+            .try_into()
+            .expect("unable to convert status.length to usize"),
         e_tag: None,
         version: None,
     })

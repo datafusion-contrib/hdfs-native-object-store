@@ -10,7 +10,7 @@ mod test {
     use serial_test::serial;
     use std::{collections::HashSet, sync::Arc};
 
-    pub const TEST_FILE_INTS: usize = 64 * 1024 * 1024;
+    pub const TEST_FILE_INTS: u64 = 64 * 1024 * 1024;
 
     #[tokio::test]
     #[serial]
@@ -162,7 +162,7 @@ mod test {
 
             assert_eq!(
                 store.head(&Path::from("/newfile")).await?.size,
-                size_to_check as usize
+                size_to_check.try_into().unwrap()
             );
 
             let read_data = store.get(&Path::from("/newfile")).await?.bytes().await?;
@@ -215,7 +215,7 @@ mod test {
 
             assert_eq!(
                 store.head(&Path::from("/newfile")).await?.size,
-                size_to_check as usize
+                size_to_check.try_into().unwrap()
             );
 
             let mut read_data = store.get(&Path::from("/newfile")).await?.bytes().await?;
