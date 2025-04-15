@@ -16,7 +16,7 @@ mod test {
     #[serial]
     async fn test_object_store() -> object_store::Result<()> {
         let dfs = MiniDfs::with_features(&HashSet::from([DfsFeatures::HA]));
-        let client = Client::new(&dfs.url).to_object_store_err()?;
+        let client = Arc::new(Client::new(&dfs.url).to_object_store_err()?);
 
         // Create a test file with the client directly to sanity check reads and lists
         let mut file = client
@@ -32,9 +32,9 @@ mod test {
 
         client.mkdirs("/testdir", 0o755, true).await.unwrap();
 
-        let store = HdfsObjectStore::new(Arc::new(client));
+        let store = HdfsObjectStore::new(Arc::clone(&client));
 
-        test_object_store_head(&store).await?;
+        test_object_store_head(&store, &client).await?;
         test_object_store_list(&store).await?;
         test_object_store_rename(&store).await?;
         test_object_store_read(&store).await?;
@@ -45,12 +45,21 @@ mod test {
         Ok(())
     }
 
-    async fn test_object_store_head(store: &HdfsObjectStore) -> object_store::Result<()> {
+    async fn test_object_store_head(
+        store: &HdfsObjectStore,
+        client: &Arc<Client>,
+    ) -> object_store::Result<()> {
         use object_store::{path::Path, ObjectStore};
+
+        let status = client.get_file_info("/testfile").await.unwrap();
 
         let head = store.head(&Path::from("/testfile")).await?;
         assert_eq!(head.location, Path::from("/testfile"));
         assert_eq!(head.size, TEST_FILE_INTS * 4);
+        assert_eq!(
+            head.last_modified.timestamp_millis(),
+            status.modification_time as i64
+        );
 
         assert!(store.head(&Path::from("/testfile2")).await.is_err());
         assert!(store.head(&Path::from("/testdir")).await.is_err());
