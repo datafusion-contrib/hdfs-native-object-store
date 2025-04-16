@@ -307,17 +307,7 @@ impl ObjectStore for HdfsObjectStore {
             .to_object_store_err();
         }
 
-        Ok(ObjectMeta {
-            location: location.clone(),
-            last_modified: DateTime::<Utc>::from_timestamp(status.modification_time as i64, 0)
-                .unwrap(),
-            size: status
-                .length
-                .try_into()
-                .expect("unable to convert status.length to usize"),
-            e_tag: None,
-            version: None,
-        })
+        get_object_meta(&status)
     }
 
     /// Delete the object at the specified location.
@@ -638,7 +628,8 @@ fn make_absolute_dir(path: &Path) -> String {
 fn get_object_meta(status: &FileStatus) -> Result<ObjectMeta> {
     Ok(ObjectMeta {
         location: Path::parse(&status.path)?,
-        last_modified: DateTime::<Utc>::from_timestamp(status.modification_time as i64, 0).unwrap(),
+        last_modified: DateTime::<Utc>::from_timestamp_millis(status.modification_time as i64)
+            .unwrap(),
         size: status
             .length
             .try_into()
