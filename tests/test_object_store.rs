@@ -1,6 +1,7 @@
 #[cfg(feature = "integration-test")]
 mod test {
     use bytes::{Buf, BufMut, BytesMut};
+    use chrono::{Datelike, Utc};
     use hdfs_native::{
         minidfs::{DfsFeatures, MiniDfs},
         Client, WriteOptions,
@@ -60,6 +61,7 @@ mod test {
             head.last_modified.timestamp_millis(),
             status.modification_time as i64
         );
+        assert_eq!(head.last_modified.year(), Utc::now().year());
 
         assert!(store.head(&Path::from("/testfile2")).await.is_err());
         assert!(store.head(&Path::from("/testdir")).await.is_err());
