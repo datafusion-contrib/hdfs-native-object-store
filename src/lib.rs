@@ -41,7 +41,7 @@ use tokio::{
 #[cfg(feature = "integration-test")]
 pub use hdfs_native::minidfs;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HdfsObjectStore {
     client: Arc<Client>,
 }
