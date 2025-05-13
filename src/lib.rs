@@ -330,7 +330,7 @@ impl ObjectStore for HdfsObjectStore {
         let status_stream = self
             .client
             .list_status_iter(
-                &prefix.map(make_absolute_dir).unwrap_or("".to_string()),
+                &prefix.map(make_absolute_dir).unwrap_or("/".to_string()),
                 true,
             )
             .into_stream()

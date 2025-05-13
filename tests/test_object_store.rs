@@ -79,6 +79,11 @@ mod test {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].as_ref().unwrap().location, Path::from("/testfile"));
 
+        // A list of None should be logically equivalent to /
+        let list: Vec<object_store::Result<ObjectMeta>> = store.list(None).collect().await;
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].as_ref().unwrap().location, Path::from("/testfile"));
+
         // Listing of a prefix that doesn't exist should return an empty result, not an error
         assert_eq!(
             store.list(Some(&Path::from("/doesnt/exist"))).count().await,
