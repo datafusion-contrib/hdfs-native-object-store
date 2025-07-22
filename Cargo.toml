@@ -16,7 +16,7 @@ bytes = "1"
 chrono = "0.4"
 futures = "0.3"
 hdfs-native = "0.11"
-object_store = "0.12"
+object_store = "0.12.2"
 thiserror = "2"
 tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"] }
 
@@ -25,4 +25,4 @@ env_logger = "0.11"
 serial_test = "3"
 
 [features]
-integration-test = ["hdfs-native/integration-test"]
+integration-test = ["hdfs-native/integration-test", "object_store/integration"]
