@@ -25,7 +25,7 @@ use futures::{
     stream::{BoxStream, StreamExt},
     FutureExt,
 };
-use hdfs_native::{client::FileStatus, file::FileWriter, Client, HdfsError, WriteOptions};
+use hdfs_native::{client::FileStatus, file::FileWriter, Client, ClientBuilder, HdfsError, WriteOptions};
 #[allow(deprecated)]
 use object_store::{
     path::Path, GetOptions, GetResult, GetResultPayload, ListResult, MultipartUpload, ObjectMeta,
@@ -62,7 +62,7 @@ impl HdfsObjectStore {
     /// # use std::sync::Arc;
     /// use hdfs_native::Client;
     /// # use hdfs_native_object_store::HdfsObjectStore;
-    /// let client = Client::new("hdfs://127.0.0.1:9000").unwrap();
+    /// let client = ClientBuilder::new().with_url("hdfs://127.0.0.1:9000").build().unwrap();
     /// let store = HdfsObjectStore::new(Arc::new(client));
     /// ```
     pub fn new(client: Arc<Client>) -> Self {
@@ -80,7 +80,7 @@ impl HdfsObjectStore {
     /// # }
     /// ```
     pub fn with_url(url: &str) -> Result<Self> {
-        Ok(Self::new(Arc::new(Client::new(url).to_object_store_err()?)))
+        Ok(Self::new(Arc::new(ClientBuilder::new().with_url(url).build().to_object_store_err()?)))
     }
 
     /// Creates a new HdfsObjectStore using the specified URL and Hadoop configs.
@@ -101,7 +101,7 @@ impl HdfsObjectStore {
     /// ```
     pub fn with_config(url: &str, config: HashMap<String, String>) -> Result<Self> {
         Ok(Self::new(Arc::new(
-            Client::new_with_config(url, config).to_object_store_err()?,
+            ClientBuilder::new().with_url(url).with_config(config).build().to_object_store_err()?,
         )))
     }
 
