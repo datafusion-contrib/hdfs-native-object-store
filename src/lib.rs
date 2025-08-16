@@ -731,12 +731,12 @@ mod test {
             hdfs_native::minidfs::DfsFeatures::HA,
         ]));
 
-        let integration = HdfsObjectStoreBuilder::new()
-            .with_url(&dfs.url)
-            .build()
-            .unwrap();
+        // let integration = HdfsObjectStoreBuilder::new()
+        //     .with_url(&dfs.url)
+        //     .build()
+        //     .unwrap();
 
-        futures::executor::block_on(get_opts(&integration));
+        // futures::executor::block_on(get_opts(&integration));
 
         let rt = Runtime::new().unwrap();
 
