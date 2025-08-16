@@ -12,6 +12,7 @@ Each release supports a certain minor release of both the `object_store` crate a
 |0.12.x|>=0.10, <0.12|0.10|
 |0.13.x|>=0.10, <0.12|0.11|
 |0.14.x|0.12|0.11|
+|0.15.x|0.12|0.12|
 
 # Usage
 ```rust
