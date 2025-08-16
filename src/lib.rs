@@ -60,7 +60,7 @@ impl HdfsObjectStore {
     ///
     /// ```rust
     /// # use std::sync::Arc;
-    /// use hdfs_native::Client;
+    /// use hdfs_native::ClientBuilder;
     /// # use hdfs_native_object_store::HdfsObjectStore;
     /// let client = ClientBuilder::new().with_url("hdfs://127.0.0.1:9000").build().unwrap();
     /// let store = HdfsObjectStore::new(Arc::new(client));
