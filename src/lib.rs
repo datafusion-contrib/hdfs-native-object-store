@@ -25,7 +25,9 @@ use futures::{
     stream::{BoxStream, StreamExt},
     FutureExt,
 };
-use hdfs_native::{client::FileStatus, file::FileWriter, Client, ClientBuilder, HdfsError, WriteOptions};
+use hdfs_native::{
+    client::FileStatus, file::FileWriter, Client, ClientBuilder, HdfsError, WriteOptions,
+};
 #[allow(deprecated)]
 use object_store::{
     path::Path, GetOptions, GetResult, GetResultPayload, ListResult, MultipartUpload, ObjectMeta,
@@ -80,7 +82,12 @@ impl HdfsObjectStore {
     /// # }
     /// ```
     pub fn with_url(url: &str) -> Result<Self> {
-        Ok(Self::new(Arc::new(ClientBuilder::new().with_url(url).build().to_object_store_err()?)))
+        Ok(Self::new(Arc::new(
+            ClientBuilder::new()
+                .with_url(url)
+                .build()
+                .to_object_store_err()?,
+        )))
     }
 
     /// Creates a new HdfsObjectStore using the specified URL and Hadoop configs.
@@ -101,7 +108,11 @@ impl HdfsObjectStore {
     /// ```
     pub fn with_config(url: &str, config: HashMap<String, String>) -> Result<Self> {
         Ok(Self::new(Arc::new(
-            ClientBuilder::new().with_url(url).with_config(config).build().to_object_store_err()?,
+            ClientBuilder::new()
+                .with_url(url)
+                .with_config(config)
+                .build()
+                .to_object_store_err()?,
         )))
     }
 
