@@ -105,7 +105,7 @@ impl HdfsObjectStore {
     /// use hdfs_native::ClientBuilder;
     /// # use hdfs_native_object_store::HdfsObjectStore;
     /// let client = ClientBuilder::new().with_url("hdfs://127.0.0.1:9000").build().unwrap();
-    /// let store = HdfsObjectStore::new(Arc::new(client));
+    /// let store = HdfsObjectStore::new(client);
     /// ```
     pub fn new(client: Client) -> Self {
         Self { client }
