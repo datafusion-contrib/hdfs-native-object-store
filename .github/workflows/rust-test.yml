@@ -41,9 +41,6 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Install native libs
-        run: sudo apt-get install -y libkrb5-dev
-
       - name: build and lint with clippy
         run: cargo clippy --all-targets --features integration-test -- -D warnings
 
@@ -83,15 +80,6 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
-
-      - name: Install native libs
-        run: sudo apt-get install -y libkrb5-dev krb5-user
-
-      - name: Download Hadoop
-        run: |
-          wget -q https://dlcdn.apache.org/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz
-          tar -xf hadoop-3.4.0.tar.gz -C $GITHUB_WORKSPACE
-          echo "$GITHUB_WORKSPACE/hadoop-3.4.0/bin" >> $GITHUB_PATH
 
       - name: Run tests
         run: cargo test --features integration-test

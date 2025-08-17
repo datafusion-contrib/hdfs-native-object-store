@@ -535,9 +535,9 @@ checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
 name = "hdfs-native"
-version = "0.12.0"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23709a4e6b07f231c28608b9c84a873157221cae9674478ca7569ec5ac505517"
+checksum = "411cba6a8e2c07a9476729690d05bd445c1425771eca41d2f5c3e41edebf7900"
 dependencies = [
  "aes",
  "base64",

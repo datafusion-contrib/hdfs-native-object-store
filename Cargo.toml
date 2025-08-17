@@ -15,7 +15,7 @@ async-trait = "0.1"
 bytes = "1"
 chrono = "0.4"
 futures = "0.3"
-hdfs-native = "0.12"
+hdfs-native = "0.12.2"
 object_store = "0.12.2"
 thiserror = "2"
 tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"] }

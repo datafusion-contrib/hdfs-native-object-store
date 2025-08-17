@@ -12,12 +12,12 @@ Each release supports a certain minor release of both the `object_store` crate a
 |0.12.x|>=0.10, <0.12|0.10|
 |0.13.x|>=0.10, <0.12|0.11|
 |0.14.x|0.12|0.11|
-|0.15.x|0.12|0.12|
+|0.15.x|>=0.12.2, <0.13|0.12|
 
 # Usage
 ```rust
-use hdfs_native_object_store::HdfsObjectStore;
-let store = HdfsObjectStore::with_url("hdfs://localhost:9000")?;
+use hdfs_native_object_store::HdfsObjectStoreBuilder;
+let store = HdfsObjectStoreBuilder::new().with_url("hdfs://localhost:9000").build()?;
 ```
 
 # Documentation
