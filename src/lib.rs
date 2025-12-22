@@ -159,8 +159,6 @@ impl HdfsObjectStore {
         Ok(Self { client })
     }
 
-    async fn internal_copy(&self, from: &Path, to: &Path, overwrite: bool) -> Result<()> {}
-
     async fn open_tmp_file(&self, file_path: &str) -> Result<(FileWriter, String)> {
         let path_buf = PathBuf::from(file_path);
 
@@ -468,31 +466,21 @@ impl ObjectStore for HdfsObjectStore {
             .to_object_store_err()?)
     }
 
-    /// Copy an object from one path to another in the same object store.
-    ///
-    /// If there exists an object at the destination, it will be overwritten.
-    // async fn copy(&self, from: &Path, to: &Path) -> Result<()> {
-    //     self.internal_copy(from, to, true).await
-    // }
-
-    // /// Copy an object from one path to another, only if destination is empty.
-    // ///
-    // /// Will return an error if the destination already has an object.
-    // ///
-    // /// Performs an atomic operation if the underlying object storage supports it.
-    // /// If atomic operations are not supported by the underlying object storage (like S3)
-    // /// it will return an error.
-    // async fn copy_if_not_exists(&self, from: &Path, to: &Path) -> Result<()> {
-    //     self.internal_copy(from, to, false).await
-    // }
-
     /// Copy an object from one path to another with options.
     async fn copy_opts(&self, from: &Path, to: &Path, options: CopyOptions) -> Result<()> {
-        let overwrite = match self.client.get_file_info(&make_absolute_file(to)).await {
-            Ok(_) if matches!(options.mode, CopyMode::Overwrite) => true,
-            Ok(_) => Err(HdfsError::AlreadyExists(make_absolute_file(to))).to_object_store_err()?,
-            Err(HdfsError::FileNotFound(_)) => false,
-            Err(e) => Err(e).to_object_store_err()?,
+        let overwrite = match options.mode {
+            CopyMode::Create => {
+                // Eagerly check if the target file exists first before wasting time copying
+                match self.client.get_file_info(&make_absolute_file(to)).await {
+                    Ok(_) => {
+                        return Err(HdfsError::AlreadyExists(make_absolute_file(to)))
+                            .to_object_store_err();
+                    }
+                    Err(HdfsError::FileNotFound(_)) => false,
+                    Err(e) => return Err(e).to_object_store_err(),
+                }
+            }
+            CopyMode::Overwrite => true,
         };
 
         let write_options = WriteOptions {
