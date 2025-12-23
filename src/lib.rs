@@ -20,18 +20,18 @@ use std::{
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use futures::{
-    stream::{BoxStream, StreamExt},
     FutureExt,
+    stream::{BoxStream, StreamExt},
 };
 use hdfs_native::{
-    client::FileStatus, file::FileWriter, Client, ClientBuilder, HdfsError, WriteOptions,
-};
-#[allow(deprecated)]
-use object_store::{
-    path::Path, GetOptions, GetResult, GetResultPayload, ListResult, MultipartUpload, ObjectMeta,
-    ObjectStore, PutMode, PutMultipartOpts, PutOptions, PutPayload, PutResult, Result, UploadPart,
+    Client, ClientBuilder, HdfsError, WriteOptions, client::FileStatus, file::FileWriter,
 };
 use object_store::{CopyMode, CopyOptions, RenameOptions, RenameTargetMode};
+#[allow(deprecated)]
+use object_store::{
+    GetOptions, GetResult, GetResultPayload, ListResult, MultipartUpload, ObjectMeta, ObjectStore,
+    PutMode, PutMultipartOpts, PutOptions, PutPayload, PutResult, Result, UploadPart, path::Path,
+};
 use tokio::{
     runtime::Handle,
     sync::{mpsc, oneshot},
