@@ -15,8 +15,8 @@ async-trait = "0.1"
 bytes = "1"
 chrono = "0.4"
 futures = "0.3"
-hdfs-native = "0.13.1"
-object_store = "0.13.0"
+hdfs-native = "0.13"
+object_store = "0.13"
 thiserror = "2"
 tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"] }
 
@@ -26,6 +26,3 @@ serial_test = "3"
 
 [features]
 integration-test = ["hdfs-native/integration-test", "object_store/integration"]
-
-[patch.crates-io]
-object_store = {  git = "https://github.com/alamb/arrow-rs-object-store.git", branch="alamb/prepare_0.13.0" }
