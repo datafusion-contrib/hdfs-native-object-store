@@ -31,6 +31,7 @@ use object_store::{
     path::Path, GetOptions, GetResult, GetResultPayload, ListResult, MultipartUpload, ObjectMeta,
     ObjectStore, PutMode, PutMultipartOpts, PutOptions, PutPayload, PutResult, Result, UploadPart,
 };
+use object_store::{CopyMode, CopyOptions, RenameOptions, RenameTargetMode};
 use tokio::{
     runtime::Handle,
     sync::{mpsc, oneshot},
@@ -158,40 +159,6 @@ impl HdfsObjectStore {
         Ok(Self { client })
     }
 
-    async fn internal_copy(&self, from: &Path, to: &Path, overwrite: bool) -> Result<()> {
-        let overwrite = match self.client.get_file_info(&make_absolute_file(to)).await {
-            Ok(_) if overwrite => true,
-            Ok(_) => Err(HdfsError::AlreadyExists(make_absolute_file(to))).to_object_store_err()?,
-            Err(HdfsError::FileNotFound(_)) => false,
-            Err(e) => Err(e).to_object_store_err()?,
-        };
-
-        let write_options = WriteOptions {
-            overwrite,
-            ..Default::default()
-        };
-
-        let file = self
-            .client
-            .read(&make_absolute_file(from))
-            .await
-            .to_object_store_err()?;
-        let mut stream = file.read_range_stream(0, file.file_length()).boxed();
-
-        let mut new_file = self
-            .client
-            .create(&make_absolute_file(to), write_options)
-            .await
-            .to_object_store_err()?;
-
-        while let Some(bytes) = stream.next().await.transpose().to_object_store_err()? {
-            new_file.write(bytes).await.to_object_store_err()?;
-        }
-        new_file.close().await.to_object_store_err()?;
-
-        Ok(())
-    }
-
     async fn open_tmp_file(&self, file_path: &str) -> Result<(FileWriter, String)> {
         let path_buf = PathBuf::from(file_path);
 
@@ -253,7 +220,10 @@ impl ObjectStore for HdfsObjectStore {
             PutMode::Create => false,
             PutMode::Overwrite => true,
             PutMode::Update(_) => {
-                return Err(object_store::Error::NotImplemented);
+                return Err(object_store::Error::NotImplemented {
+                    operation: "PutOptions with Update precondition".to_string(),
+                    implementer: "HdfsObjectStore".to_string(),
+                });
             }
         };
 
@@ -278,7 +248,11 @@ impl ObjectStore for HdfsObjectStore {
             .await
             .to_object_store_err()?;
 
-        let e_tag = self.head(location).await?.e_tag;
+        let e_tag = self
+            .get_opts(location, GetOptions::default().with_head(true))
+            .await?
+            .meta
+            .e_tag;
 
         Ok(PutResult {
             e_tag,
@@ -308,47 +282,6 @@ impl ObjectStore for HdfsObjectStore {
 
     /// Reads data for the specified location.
     async fn get_opts(&self, location: &Path, options: GetOptions) -> Result<GetResult> {
-        let meta = self.head(location).await?;
-
-        options.check_preconditions(&meta)?;
-
-        let range = options
-            .range
-            .map(|r| r.as_range(meta.size))
-            .transpose()
-            .map_err(|source| generic_error(source.into()))?
-            .unwrap_or(0..meta.size);
-
-        let reader = self
-            .client
-            .read(&make_absolute_file(location))
-            .await
-            .to_object_store_err()?;
-        let start: usize = range
-            .start
-            .try_into()
-            .expect("unable to convert range.start to usize");
-        let end: usize = range
-            .end
-            .try_into()
-            .expect("unable to convert range.end to usize");
-        let stream = reader
-            .read_range_stream(start, end - start)
-            .map(|b| b.to_object_store_err())
-            .boxed();
-
-        let payload = GetResultPayload::Stream(stream);
-
-        Ok(GetResult {
-            payload,
-            meta,
-            range,
-            attributes: Default::default(),
-        })
-    }
-
-    /// Return the metadata for the specified location
-    async fn head(&self, location: &Path) -> Result<ObjectMeta> {
         let status = self
             .client
             .get_file_info(&make_absolute_file(location))
@@ -362,22 +295,72 @@ impl ObjectStore for HdfsObjectStore {
             });
         }
 
-        get_object_meta(&status)
+        let meta = get_object_meta(&status)?;
+
+        options.check_preconditions(&meta)?;
+
+        let (range, payload) = if options.head {
+            (
+                (0..0),
+                GetResultPayload::Stream(futures::stream::empty().boxed()),
+            )
+        } else {
+            let range = options
+                .range
+                .map(|r| r.as_range(meta.size))
+                .transpose()
+                .map_err(|source| generic_error(source.into()))?
+                .unwrap_or(0..meta.size);
+
+            let reader = self
+                .client
+                .read(&make_absolute_file(location))
+                .await
+                .to_object_store_err()?;
+            let start: usize = range
+                .start
+                .try_into()
+                .expect("unable to convert range.start to usize");
+            let end: usize = range
+                .end
+                .try_into()
+                .expect("unable to convert range.end to usize");
+            let stream = reader
+                .read_range_stream(start, end - start)
+                .map(|b| b.to_object_store_err())
+                .boxed();
+
+            (range, GetResultPayload::Stream(stream))
+        };
+
+        Ok(GetResult {
+            payload,
+            meta,
+            range,
+            attributes: Default::default(),
+        })
     }
 
-    /// Delete the object at the specified location.
-    async fn delete(&self, location: &Path) -> Result<()> {
-        let result = self
-            .client
-            .delete(&make_absolute_file(location), false)
-            .await
-            .to_object_store_err()?;
-
-        if !result {
-            Err(HdfsError::FileNotFound(location.to_string())).to_object_store_err()?
-        }
-
-        Ok(())
+    /// Delete a stream of objects.
+    fn delete_stream(
+        &self,
+        locations: BoxStream<'static, Result<Path>>,
+    ) -> BoxStream<'static, Result<Path>> {
+        let client = self.client.clone();
+        locations
+            .map(move |location| {
+                let client = client.clone();
+                async move {
+                    let location = location?;
+                    client
+                        .delete(&make_absolute_file(&location), false)
+                        .await
+                        .to_object_store_err()?;
+                    Ok(location)
+                }
+            })
+            .buffered(10)
+            .boxed()
     }
 
     /// List all the objects with the given prefix.
@@ -454,8 +437,7 @@ impl ObjectStore for HdfsObjectStore {
         })
     }
 
-    /// Renames a file. This operation is guaranteed to be atomic.
-    async fn rename(&self, from: &Path, to: &Path) -> Result<()> {
+    async fn rename_opts(&self, from: &Path, to: &Path, options: RenameOptions) -> Result<()> {
         // Make sure the parent directory exists
         let mut parent: Vec<_> = to.parts().collect();
         parent.pop();
@@ -468,38 +450,63 @@ impl ObjectStore for HdfsObjectStore {
                 .to_object_store_err()?;
         }
 
+        let overwrite = match options.target_mode {
+            RenameTargetMode::Overwrite => true,
+            RenameTargetMode::Create => false,
+        };
+
         Ok(self
             .client
-            .rename(&make_absolute_file(from), &make_absolute_file(to), true)
+            .rename(
+                &make_absolute_file(from),
+                &make_absolute_file(to),
+                overwrite,
+            )
             .await
             .to_object_store_err()?)
     }
 
-    /// Renames a file only if the distination doesn't exist. This operation is guaranteed
-    /// to be atomic.
-    async fn rename_if_not_exists(&self, from: &Path, to: &Path) -> Result<()> {
-        self.client
-            .rename(&make_absolute_file(from), &make_absolute_file(to), false)
+    /// Copy an object from one path to another with options.
+    async fn copy_opts(&self, from: &Path, to: &Path, options: CopyOptions) -> Result<()> {
+        let overwrite = match options.mode {
+            CopyMode::Create => {
+                // Eagerly check if the target file exists first before wasting time copying
+                match self.client.get_file_info(&make_absolute_file(to)).await {
+                    Ok(_) => {
+                        return Err(HdfsError::AlreadyExists(make_absolute_file(to)))
+                            .to_object_store_err();
+                    }
+                    Err(HdfsError::FileNotFound(_)) => false,
+                    Err(e) => return Err(e).to_object_store_err(),
+                }
+            }
+            CopyMode::Overwrite => true,
+        };
+
+        let write_options = WriteOptions {
+            overwrite,
+            ..Default::default()
+        };
+
+        let file = self
+            .client
+            .read(&make_absolute_file(from))
             .await
-            .to_object_store_err()
-    }
+            .to_object_store_err()?;
+        let mut stream = file.read_range_stream(0, file.file_length()).boxed();
 
-    /// Copy an object from one path to another in the same object store.
-    ///
-    /// If there exists an object at the destination, it will be overwritten.
-    async fn copy(&self, from: &Path, to: &Path) -> Result<()> {
-        self.internal_copy(from, to, true).await
-    }
+        let mut new_file = self
+            .client
+            .create(&make_absolute_file(to), write_options)
+            .await
+            .to_object_store_err()?;
 
-    /// Copy an object from one path to another, only if destination is empty.
-    ///
-    /// Will return an error if the destination already has an object.
-    ///
-    /// Performs an atomic operation if the underlying object storage supports it.
-    /// If atomic operations are not supported by the underlying object storage (like S3)
-    /// it will return an error.
-    async fn copy_if_not_exists(&self, from: &Path, to: &Path) -> Result<()> {
-        self.internal_copy(from, to, false).await
+        while let Some(bytes) = stream.next().await.transpose().to_object_store_err()? {
+            new_file.write(bytes).await.to_object_store_err()?;
+        }
+        new_file.close().await.to_object_store_err()?;
+
+        Ok(())
     }
 }
 
