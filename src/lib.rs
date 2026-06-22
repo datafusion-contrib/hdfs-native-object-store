@@ -239,7 +239,7 @@ impl ObjectStore for HdfsObjectStore {
         let (mut tmp_file, tmp_file_path) = self.open_tmp_file(&final_file_path).await?;
 
         for bytes in payload {
-            tmp_file.write(bytes).await.to_object_store_err()?;
+            tmp_file.write_bytes(bytes).await.to_object_store_err()?;
         }
         tmp_file.close().await.to_object_store_err()?;
 
@@ -257,6 +257,7 @@ impl ObjectStore for HdfsObjectStore {
         Ok(PutResult {
             e_tag,
             version: None,
+            extensions: Default::default(),
         })
     }
 
@@ -338,6 +339,7 @@ impl ObjectStore for HdfsObjectStore {
             meta,
             range,
             attributes: Default::default(),
+            extensions: Default::default(),
         })
     }
 
@@ -434,6 +436,7 @@ impl ObjectStore for HdfsObjectStore {
         Ok(ListResult {
             common_prefixes: dirs,
             objects: files,
+            extensions: Default::default(),
         })
     }
 
@@ -502,7 +505,7 @@ impl ObjectStore for HdfsObjectStore {
             .to_object_store_err()?;
 
         while let Some(bytes) = stream.next().await.transpose().to_object_store_err()? {
-            new_file.write(bytes).await.to_object_store_err()?;
+            new_file.write_bytes(bytes).await.to_object_store_err()?;
         }
         new_file.close().await.to_object_store_err()?;
 
@@ -567,7 +570,7 @@ impl HdfsMultipartWriter {
                 match part_receiver.recv().await {
                     Some((sender, part)) => {
                         for bytes in part {
-                            if let Err(e) = writer.write(bytes).await {
+                            if let Err(e) = writer.write_bytes(bytes).await {
                                 let _ = sender.send(Err(e).to_object_store_err());
                                 return Err(generic_error("Failed to write all parts".into()));
                             }
@@ -631,6 +634,7 @@ impl MultipartUpload for HdfsMultipartWriter {
             Ok(PutResult {
                 e_tag: None,
                 version: None,
+                extensions: Default::default(),
             })
         } else {
             Err(generic_error(
