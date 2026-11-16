@@ -10,6 +10,23 @@
 //!     .unwrap();
 //! ```
 //!
+#[cfg(all(feature = "object-store-0-13", feature = "object-store-0-14"))]
+compile_error!("select only one of `object-store-0-13` or `object-store-0-14`");
+
+#[cfg(not(any(feature = "object-store-0-13", feature = "object-store-0-14")))]
+compile_error!("enable exactly one object_store version feature");
+
+#[cfg(all(
+    feature = "object-store-0-13",
+    not(feature = "object-store-0-14")
+))]
+use object_store_013 as object_store;
+#[cfg(all(
+    feature = "object-store-0-14",
+    not(feature = "object-store-0-13")
+))]
+use object_store_014 as object_store;
+
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
@@ -706,7 +723,7 @@ fn get_object_meta(status: &FileStatus) -> Result<ObjectMeta> {
 mod test {
     use std::collections::HashSet;
 
-    use object_store::integration::*;
+    use crate::object_store::integration::*;
     use serial_test::serial;
     use tokio::runtime::Runtime;
 

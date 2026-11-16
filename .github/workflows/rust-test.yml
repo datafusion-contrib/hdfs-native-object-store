@@ -28,6 +28,11 @@ jobs:
           - ubuntu-latest
           # - macos-11
           # - windows-latest
+        object_store:
+          - version: "0.14"
+            cargo_flags: --features integration-test
+          - version: "0.13"
+            cargo_flags: --no-default-features --features integration-test,object-store-0-13
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -37,14 +42,14 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: build and lint with clippy
-        run: cargo clippy --all-targets --features integration-test -- -D warnings
+      - name: Build and lint with clippy (object_store ${{ matrix.object_store.version }})
+        run: cargo clippy --all-targets ${{ matrix.object_store.cargo_flags }} -- -D warnings
 
       - name: Check docs
-        run: cargo doc
+        run: cargo doc ${{ matrix.object_store.cargo_flags }}
 
-      - name: Check all features
-        run: cargo check --all-targets --features integration-test
+      - name: Check integration features (object_store ${{ matrix.object_store.version }})
+        run: cargo check --all-targets ${{ matrix.object_store.cargo_flags }}
 
   test:
     strategy:
@@ -54,6 +59,11 @@ jobs:
           - ubuntu-latest
           # - macos-11
           # - windows-latest
+        object_store:
+          - version: "0.14"
+            cargo_flags: --features integration-test
+          - version: "0.13"
+            cargo_flags: --no-default-features --features integration-test,object-store-0-13
     runs-on: ${{ matrix.os }}
     env:
       # Disable full debug symbol generation to speed up CI build and keep memory down
@@ -75,8 +85,5 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Install kerberos to workaround required kdestroy
-        run: sudo apt-get install -y libkrb5-dev krb5-user
-
-      - name: Run tests
-        run: cargo test --features integration-test
+      - name: Run tests (object_store ${{ matrix.object_store.version }})
+        run: cargo test ${{ matrix.object_store.cargo_flags }}
