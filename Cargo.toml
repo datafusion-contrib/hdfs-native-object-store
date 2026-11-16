@@ -1,6 +1,6 @@
 [package]
 name = "hdfs-native-object-store"
-version = "0.17.0"
+version = "0.18.0"
 edition = "2024"
 authors = ["Adam Binford <adamq43@gmail.com>"]
 homepage = "https://github.com/datafusion-contrib/hdfs-native-object-store"
@@ -15,8 +15,9 @@ async-trait = "0.1"
 bytes = "1"
 chrono = "0.4"
 futures = "0.3"
-hdfs-native = "0.14"
-object_store = "0.14"
+hdfs-native = "0.15"
+object_store_013 = { package = "object_store", version = "0.13", optional = true }
+object_store_014 = { package = "object_store", version = "0.14", optional = true }
 thiserror = "2"
 tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"] }
 
@@ -25,4 +26,11 @@ env_logger = "0.11"
 serial_test = "3"
 
 [features]
-integration-test = ["hdfs-native/integration-test", "object_store/integration"]
+default = ["object-store-0-14"]
+object-store-0-13 = ["dep:object_store_013"]
+object-store-0-14 = ["dep:object_store_014"]
+integration-test = [
+    "hdfs-native/integration-test",
+    "object_store_013?/integration",
+    "object_store_014?/integration",
+]

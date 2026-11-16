@@ -10,6 +10,28 @@
 //!     .unwrap();
 //! ```
 //!
+//! # `object_store` version
+//!
+//! The default feature, `object-store-0-14`, selects `object_store` 0.14. To use
+//! `object_store` 0.13, disable default features and enable `object-store-0-13`:
+//!
+//! ```toml
+//! hdfs-native-object-store = { version = "0.18", default-features = false, features = ["object-store-0-13"] }
+//! ```
+//!
+//! Enable only one of `object-store-0-13` and `object-store-0-14`.
+//!
+#[cfg(all(feature = "object-store-0-13", feature = "object-store-0-14"))]
+compile_error!("select only one of `object-store-0-13` or `object-store-0-14`");
+
+#[cfg(not(any(feature = "object-store-0-13", feature = "object-store-0-14")))]
+compile_error!("enable exactly one object_store version feature");
+
+#[cfg(all(feature = "object-store-0-13", not(feature = "object-store-0-14")))]
+use object_store_013 as object_store;
+#[cfg(all(feature = "object-store-0-14", not(feature = "object-store-0-13")))]
+use object_store_014 as object_store;
+
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter},
@@ -117,7 +139,7 @@ impl HdfsObjectStore {
     /// Connect to a NameNode
     /// ```rust
     /// # use hdfs_native_object_store::HdfsObjectStore;
-    /// # fn main() -> object_store::Result<()> {
+    /// # fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     /// let store = HdfsObjectStore::with_url("hdfs://127.0.0.1:9000")?;
     /// # Ok(())
     /// # }
@@ -138,7 +160,7 @@ impl HdfsObjectStore {
     /// ```rust
     /// # use hdfs_native_object_store::HdfsObjectStore;
     /// # use std::collections::HashMap;
-    /// # fn main() -> object_store::Result<()> {
+    /// # fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     /// let config = HashMap::from([
     ///     ("dfs.ha.namenodes.ns".to_string(), "nn1,nn2".to_string()),
     ///     ("dfs.namenode.rpc-address.ns.nn1".to_string(), "nn1.example.com:9000".to_string()),
@@ -257,6 +279,7 @@ impl ObjectStore for HdfsObjectStore {
         Ok(PutResult {
             e_tag,
             version: None,
+            #[cfg(feature = "object-store-0-14")]
             extensions: Default::default(),
         })
     }
@@ -339,6 +362,7 @@ impl ObjectStore for HdfsObjectStore {
             meta,
             range,
             attributes: Default::default(),
+            #[cfg(feature = "object-store-0-14")]
             extensions: Default::default(),
         })
     }
@@ -436,6 +460,7 @@ impl ObjectStore for HdfsObjectStore {
         Ok(ListResult {
             common_prefixes: dirs,
             objects: files,
+            #[cfg(feature = "object-store-0-14")]
             extensions: Default::default(),
         })
     }
@@ -634,6 +659,7 @@ impl MultipartUpload for HdfsMultipartWriter {
             Ok(PutResult {
                 e_tag: None,
                 version: None,
+                #[cfg(feature = "object-store-0-14")]
                 extensions: Default::default(),
             })
         } else {
@@ -706,7 +732,7 @@ fn get_object_meta(status: &FileStatus) -> Result<ObjectMeta> {
 mod test {
     use std::collections::HashSet;
 
-    use object_store::integration::*;
+    use crate::object_store::integration::*;
     use serial_test::serial;
     use tokio::runtime::Runtime;
 
