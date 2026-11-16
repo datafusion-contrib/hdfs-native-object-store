@@ -10,6 +10,17 @@
 //!     .unwrap();
 //! ```
 //!
+//! # `object_store` version
+//!
+//! The default feature, `object-store-0-14`, selects `object_store` 0.14. To use
+//! `object_store` 0.13, disable default features and enable `object-store-0-13`:
+//!
+//! ```toml
+//! hdfs-native-object-store = { version = "0.18", default-features = false, features = ["object-store-0-13"] }
+//! ```
+//!
+//! Enable only one of `object-store-0-13` and `object-store-0-14`.
+//!
 #[cfg(all(feature = "object-store-0-13", feature = "object-store-0-14"))]
 compile_error!("select only one of `object-store-0-13` or `object-store-0-14`");
 
