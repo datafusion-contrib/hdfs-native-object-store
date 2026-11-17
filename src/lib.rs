@@ -55,7 +55,6 @@ use object_store::{
     PutMode, PutMultipartOpts, PutOptions, PutPayload, PutResult, Result, UploadPart, path::Path,
 };
 use tokio::{
-    runtime::Handle,
     sync::{mpsc, oneshot},
     task::{self, JoinHandle},
 };
@@ -100,15 +99,55 @@ impl HdfsObjectStoreBuilder {
         self
     }
 
-    // Use a dedicated tokio runtime for spawned tasks and IO operations
-    pub fn with_io_runtime(mut self, runtime: Handle) -> Self {
+    /// Set the configuration directory path to read from.
+    pub fn with_config_dir(mut self, config_dir: impl Into<String>) -> Self {
+        self.inner = self.inner.with_config_dir(config_dir);
+        self
+    }
+
+    /// Use a dedicated Tokio runtime for spawned tasks and IO operations.
+    pub fn with_io_runtime(
+        mut self,
+        runtime: impl Into<hdfs_native::client::IORuntime>,
+    ) -> Self {
         self.inner = self.inner.with_io_runtime(runtime);
         self
     }
 
-    /// Create the [HdfsObjectStore]] instance from the provided settings
+    /// Set the effective user for the client.
+    pub fn with_user(mut self, user: impl Into<String>) -> Self {
+        self.inner = self.inner.with_user(user);
+        self
+    }
+
+    /// Set the Kerberos principal used by this client.
+    pub fn with_kerberos_principal(mut self, principal: impl Into<String>) -> Self {
+        self.inner = self.inner.with_kerberos_principal(principal);
+        self
+    }
+
+    /// Set the Kerberos keytab used by this client.
+    pub fn with_kerberos_keytab(mut self, keytab: impl Into<String>) -> Self {
+        self.inner = self.inner.with_kerberos_keytab(keytab);
+        self
+    }
+
+    /// Set the Kerberos credential cache used by this client.
+    pub fn with_kerberos_cache(mut self, cache: impl Into<String>) -> Self {
+        self.inner = self.inner.with_kerberos_cache(cache);
+        self
+    }
+
+    /// Create the [HdfsObjectStore] instance from the provided settings.
     pub fn build(self) -> Result<HdfsObjectStore> {
         let client = self.inner.build().to_object_store_err()?;
+
+        Ok(HdfsObjectStore { client })
+    }
+
+    /// Asynchronously create the [HdfsObjectStore] from the provided settings.
+    pub async fn build_async(self) -> Result<HdfsObjectStore> {
+        let client = self.inner.build_async().await.to_object_store_err()?;
 
         Ok(HdfsObjectStore { client })
     }
