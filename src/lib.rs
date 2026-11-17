@@ -106,10 +106,7 @@ impl HdfsObjectStoreBuilder {
     }
 
     /// Use a dedicated Tokio runtime for spawned tasks and IO operations.
-    pub fn with_io_runtime(
-        mut self,
-        runtime: impl Into<hdfs_native::client::IORuntime>,
-    ) -> Self {
+    pub fn with_io_runtime(mut self, runtime: impl Into<hdfs_native::client::IORuntime>) -> Self {
         self.inner = self.inner.with_io_runtime(runtime);
         self
     }
