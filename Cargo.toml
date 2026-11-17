@@ -15,7 +15,7 @@ async-trait = "0.1"
 bytes = "1"
 chrono = "0.4"
 futures = "0.3"
-hdfs-native = "0.15"
+hdfs-native = "0.15.1"
 object_store_013 = { package = "object_store", version = "0.13", optional = true }
 object_store_014 = { package = "object_store", version = "0.14", optional = true }
 thiserror = "2"
@@ -29,6 +29,10 @@ serial_test = "3"
 default = ["object-store-0-14"]
 object-store-0-13 = ["dep:object_store_013"]
 object-store-0-14 = ["dep:object_store_014"]
+kms = ["hdfs-native/kms"]
+kms-native-tls = ["hdfs-native/kms-native-tls"]
+kms-rustls-tls = ["hdfs-native/kms-rustls-tls"]
+kms-rustls-no-provider = ["hdfs-native/kms-rustls-no-provider"]
 integration-test = [
     "hdfs-native/integration-test",
     "object_store_013?/integration",
