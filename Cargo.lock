@@ -706,7 +706,7 @@ dependencies = [
 
 [[package]]
 name = "hdfs-native-object-store"
-version = "0.18.1"
+version = "0.18.2"
 dependencies = [
  "async-trait",
  "bytes",
